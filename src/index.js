@@ -1,65 +1,87 @@
 import Notiflix from 'notiflix';
-import { fetchPhotos } from './fetchPhotos.js';
+import PhotosService from './PhotosService.js';
+import LoadMoreBtn from './LoadMoreBtn.js';
 import './css/styles.css';
 
 const refs = {
   searchForm: document.getElementById('search-form'),
   gallery: document.querySelector('.gallery'),
-  loadMore: document.querySelector('.load-more'),
 };
 
-let page = 1;
-let searchValue = '';
+const photosService = new PhotosService();
+const loadMoreBtn = new LoadMoreBtn({
+  selector: '.load-more',
+  isHidden: true,
+});
 
 refs.searchForm.addEventListener('submit', onSubmit);
-refs.loadMore.addEventListener('click', getMorePhotos);
+loadMoreBtn.button.addEventListener('click', getMorePhotos);
 
-async function onSubmit(e) {
+function onSubmit(e) {
   e.preventDefault();
+
   const photoName = e.target.searchQuery.value.trim();
 
   refs.gallery.innerHTML = '';
-  if (photoName === '') return;
+  if (photoName === '') {
+    loadMoreBtn.hide();
+    return;
+  }
 
-  const response = await fetchPhotos(photoName);
+  photosService.searchValue = photoName;
+  photosService.resetPage();
+  photosService.resetSumPhotos();
 
-  getPhotos(response.data.hits);
+  loadMoreBtn.show();
+  getMorePhotos();
 }
 
-function getPhotos(photos) {
+async function getPhotos() {
+  const response = await photosService.fetchPhotos();
+
+  checkAmountOfPhotos(response);
+}
+
+function checkAmountOfPhotos(response) {
+  photosService.amountOfPhotos = response.data.hits.length;
+  photosService.incrementSumPhotos();
+
+  if (
+    (photosService.amountOfPhotos !== 0 &&
+      photosService.sum === response.data.totalHits) ||
+    photosService.sum > response.data.totalHits
+  ) {
+    loadMoreBtn.hide();
+    refs.gallery.insertAdjacentHTML(
+      'beforeend',
+      "We're sorry, but you've reached the end of search results."
+    );
+    return;
+  }
+
+  checkArrayOfPhotos(response.data.hits);
+}
+
+function checkArrayOfPhotos(photos) {
   try {
     if (photos.length === 0) {
       throw new Error();
     }
     renderPhotos(photos);
+    loadMoreBtn.enable();
     resetForm();
   } catch {
+    loadMoreBtn.hide();
     Notiflix.Notify.failure(
       'Sorry, there are no images matching your search query. Please try again.'
     );
     resetForm();
   }
+}
 
-  function getMorePhotos() {}
-
-  // response
-  //   .then(response => {
-  //     const photos = response.data.hits;
-  //     console.log(photos);
-  //     if (photos.length === 0) {
-  //       throw new Error();
-  //     }
-
-  //     renderPhotos(photos);
-  //   })
-  //   .catch(() =>
-  //     Notiflix.Notify.failure(
-  //       'Sorry, there are no images matching your search query. Please try again.'
-  //     )
-  //   )
-  //   .finally(() => {
-  //     refs.searchForm.reset();
-  //   });
+function getMorePhotos() {
+  loadMoreBtn.disable();
+  getPhotos();
 }
 
 function renderPhotos(photos) {
@@ -74,27 +96,28 @@ function renderPhotos(photos) {
         comments,
         downloads,
       }) => {
-        return `<div class="photo-card">
-              <img src=${webformatURL} loading="lazy" />
-              <div class="info">
-                <p class="info-item">
-                 <b>Likes</b>
-                  ${likes}
-                </p>
-                <p class="info-item">
-                  <b>Views</b>
-                  ${views}
-                </p>
-                <p class="info-item">
-                <b>Comments</b>
-                  ${comments}
-                </p>
-                <p class="info-item">
-                <b>Downloads</b>
-                ${downloads}
-                </p>
-              </div>
-            </div>`;
+        return `
+        <div class="photo-card">
+          <img src=${webformatURL} alt="${tags}" loading="lazy" />
+          <div class="info">
+            <p class="info-item">
+            <b>Likes</b>
+              ${likes}
+            </p>
+            <p class="info-item">
+              <b>Views</b>
+              ${views}
+            </p>
+            <p class="info-item">
+            <b>Comments</b>
+              ${comments}
+            </p>
+            <p class="info-item">
+            <b>Downloads</b>
+            ${downloads}
+            </p>
+          </div>
+        </div>`;
       }
     )
     .join('');
