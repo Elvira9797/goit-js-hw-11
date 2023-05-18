@@ -177,3 +177,9 @@ button.hidden {
     margin: 0 auto;
   }
 }
+
+@media screen and (max-width: 450px) {
+  .container {
+    width: 80%;
+  }
+}
