@@ -2,11 +2,12 @@ import Notiflix from 'notiflix';
 import SimpleLightbox from 'simplelightbox';
 import PhotosService from './PhotosService.js';
 import LoadMoreBtn from './LoadMoreBtn.js';
+import renderPhotos from './markup.js';
 import btnUp from './btnUp.js';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 import './css/styles.css';
 
-const refs = {
+export const refs = {
   searchForm: document.getElementById('search-form'),
   gallery: document.querySelector('.gallery'),
 };
@@ -45,16 +46,25 @@ function getMorePhotos() {
 }
 
 async function getPhotosApi() {
-  const data = await photosService.fetchPhotos();
+  const data = await getPhotos();
 
   checkArrayOfPhotos(data.hits);
   showAmountOfPhotos(data.totalHits);
 }
 
 async function getMorePhotosApi() {
-  const data = await photosService.fetchPhotos();
+  const data = await getPhotos();
 
   checkAmountOfPhotos(data);
+}
+
+async function getPhotos() {
+  try {
+    const data = await photosService.fetchPhotos();
+    return data;
+  } catch (error) {
+    console.log(error.message);
+  }
 }
 
 function showAmountOfPhotos(allPhotos) {
@@ -67,9 +77,8 @@ function checkAmountOfPhotos(data) {
 
   if (photosService.page - 1 >= totalPages) {
     loadMoreBtn.hide();
-    refs.gallery.insertAdjacentHTML(
-      'beforeend',
-      "<p class='text-end'>We're sorry, but you've reached the end of search results.</p>"
+    Notiflix.Notify.failure(
+      "We're sorry, but you've reached the end of search results."
     );
     return;
   }
@@ -88,46 +97,4 @@ function checkArrayOfPhotos(photos) {
     new SimpleLightbox('.gallery a').refresh();
     loadMoreBtn.enable();
   }
-}
-
-function renderPhotos(photos) {
-  const markup = photos
-    .map(
-      ({
-        webformatURL,
-        largeImageURL,
-        tags,
-        likes,
-        views,
-        comments,
-        downloads,
-      }) => {
-        return `
-        <div class="photo-card">
-          <a href=${largeImageURL}>
-            <img class="img-gallery" src=${webformatURL} alt="${tags}" loading="lazy" />
-          </a>
-          <div class="info">
-            <p class="info-item">
-            <b>Likes</b>
-              ${likes}
-            </p>
-            <p class="info-item">
-              <b>Views</b>
-              ${views}
-            </p>
-            <p class="info-item">
-            <b>Comments</b>
-              ${comments}
-            </p>
-            <p class="info-item">
-            <b>Downloads</b>
-            ${downloads}
-            </p>
-          </div>
-        </div>`;
-      }
-    )
-    .join('');
-  refs.gallery.insertAdjacentHTML('beforeend', markup);
 }

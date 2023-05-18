@@ -16,15 +16,11 @@ export default class PhotosService {
   }
 
   async fetchPhotos() {
-    try {
-      const response = await axios.get(
-        `https://pixabay.com/api/?q=${this.searchValue}&page=${this.page}&${searchParams}`
-      );
-      this.incrementPage();
-      return response.data;
-    } catch (error) {
-      console.log(error);
-    }
+    const response = await axios.get(
+      `https://pixabay.com/api/?q=${this.searchValue}&page=${this.page}&${searchParams}`
+    );
+    this.incrementPage();
+    return response.data;
   }
 
   resetPage() {
