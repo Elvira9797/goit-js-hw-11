@@ -35,24 +35,37 @@ function onSubmit(e) {
   photosService.resetPage();
 
   loadMoreBtn.show();
-  getMorePhotos();
+  loadMoreBtn.disable();
+  getPhotosApi();
 }
 
 function getMorePhotos() {
   loadMoreBtn.disable();
-  getPhotos();
+  getMorePhotosApi();
 }
 
-async function getPhotos() {
+async function getPhotosApi() {
+  const data = await photosService.fetchPhotos();
+
+  checkArrayOfPhotos(data.hits);
+  showAmountOfPhotos(data.totalHits);
+}
+
+async function getMorePhotosApi() {
   const data = await photosService.fetchPhotos();
 
   checkAmountOfPhotos(data);
 }
 
+function showAmountOfPhotos(allPhotos) {
+  if (allPhotos === 0) return;
+  Notiflix.Notify.success(`Hooray! We found ${allPhotos} images.`);
+}
+
 function checkAmountOfPhotos(data) {
-  const totalPages = data.totalHits / data.hits.length;
-  console.log(data.hits);
-  if (photosService.page - 1 > totalPages) {
+  const totalPages = data.totalHits / photosService.perPage;
+
+  if (photosService.page - 1 >= totalPages) {
     loadMoreBtn.hide();
     refs.gallery.insertAdjacentHTML(
       'beforeend',

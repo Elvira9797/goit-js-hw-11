@@ -11,6 +11,7 @@ const searchParams = new URLSearchParams({
 export default class PhotosService {
   constructor() {
     this.page = 1;
+    this.perPage = 40;
     this.searchValue = '';
   }
 
