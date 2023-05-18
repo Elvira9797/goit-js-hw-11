@@ -8,14 +8,10 @@ const searchParams = new URLSearchParams({
   per_page: 40,
 });
 
-// ================Class================
-
 export default class PhotosService {
   constructor() {
     this.page = 1;
     this.searchValue = '';
-    this.sum = 0;
-    this.amountOfPhotos = 0;
   }
 
   async fetchPhotos() {
@@ -24,7 +20,7 @@ export default class PhotosService {
         `https://pixabay.com/api/?q=${this.searchValue}&page=${this.page}&${searchParams}`
       );
       this.incrementPage();
-      return response;
+      return response.data;
     } catch (error) {
       console.log(error);
     }
@@ -36,13 +32,5 @@ export default class PhotosService {
 
   incrementPage() {
     this.page += 1;
-  }
-
-  incrementSumPhotos() {
-    this.sum += this.amountOfPhotos;
-  }
-
-  resetSumPhotos() {
-    this.sum = 0;
   }
 }

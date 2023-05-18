@@ -1,6 +1,9 @@
 import Notiflix from 'notiflix';
+import SimpleLightbox from 'simplelightbox';
 import PhotosService from './PhotosService.js';
 import LoadMoreBtn from './LoadMoreBtn.js';
+import btnUp from './btnUp.js';
+import 'simplelightbox/dist/simple-lightbox.min.css';
 import './css/styles.css';
 
 const refs = {
@@ -30,58 +33,48 @@ function onSubmit(e) {
 
   photosService.searchValue = photoName;
   photosService.resetPage();
-  photosService.resetSumPhotos();
 
   loadMoreBtn.show();
   getMorePhotos();
 }
 
-async function getPhotos() {
-  const response = await photosService.fetchPhotos();
-
-  checkAmountOfPhotos(response);
+function getMorePhotos() {
+  loadMoreBtn.disable();
+  getPhotos();
 }
 
-function checkAmountOfPhotos(response) {
-  photosService.amountOfPhotos = response.data.hits.length;
-  photosService.incrementSumPhotos();
+async function getPhotos() {
+  const data = await photosService.fetchPhotos();
 
-  if (
-    (photosService.amountOfPhotos !== 0 &&
-      photosService.sum === response.data.totalHits) ||
-    photosService.sum > response.data.totalHits
-  ) {
+  checkAmountOfPhotos(data);
+}
+
+function checkAmountOfPhotos(data) {
+  const totalPages = data.totalHits / data.hits.length;
+  console.log(data.hits);
+  if (photosService.page - 1 > totalPages) {
     loadMoreBtn.hide();
     refs.gallery.insertAdjacentHTML(
       'beforeend',
-      "We're sorry, but you've reached the end of search results."
+      "<p class='text-end'>We're sorry, but you've reached the end of search results.</p>"
     );
     return;
   }
 
-  checkArrayOfPhotos(response.data.hits);
+  checkArrayOfPhotos(data.hits);
 }
 
 function checkArrayOfPhotos(photos) {
-  try {
-    if (photos.length === 0) {
-      throw new Error();
-    }
-    renderPhotos(photos);
-    loadMoreBtn.enable();
-    resetForm();
-  } catch {
+  if (photos.length === 0) {
     loadMoreBtn.hide();
     Notiflix.Notify.failure(
       'Sorry, there are no images matching your search query. Please try again.'
     );
-    resetForm();
+  } else {
+    renderPhotos(photos);
+    new SimpleLightbox('.gallery a').refresh();
+    loadMoreBtn.enable();
   }
-}
-
-function getMorePhotos() {
-  loadMoreBtn.disable();
-  getPhotos();
 }
 
 function renderPhotos(photos) {
@@ -98,7 +91,9 @@ function renderPhotos(photos) {
       }) => {
         return `
         <div class="photo-card">
-          <img src=${webformatURL} alt="${tags}" loading="lazy" />
+          <a href=${largeImageURL}>
+            <img class="img-gallery" src=${webformatURL} alt="${tags}" loading="lazy" />
+          </a>
           <div class="info">
             <p class="info-item">
             <b>Likes</b>
@@ -122,8 +117,4 @@ function renderPhotos(photos) {
     )
     .join('');
   refs.gallery.insertAdjacentHTML('beforeend', markup);
-}
-
-function resetForm() {
-  refs.searchForm.reset();
 }
